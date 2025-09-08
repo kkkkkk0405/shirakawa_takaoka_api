@@ -1,45 +1,71 @@
 import express from "express";
+
 const app = express();
 
-const API_SECRET = process.env.API_SECRET || "dev-secret";
-const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "*";
+// ====== 環境変数 ======
+const API_SECRET   = process.env.API_SECRET || "";      // 例: "sk_live_abc123..."
+const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "";    // 例: "https://kkkkkk0405.github.io"（末尾スラなし）
 
-// CORS（厳しめ）
+// ====== CORS 固定（ALLOW_ORIGIN のみ許可） ======
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", ALLOW_ORIGIN);
-  res.header("Vary", "Origin");
-  res.header("Access-Control-Allow-Headers", "Content-Type, x-api-key");
-  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
-  if (req.method === "OPTIONS") return res.sendStatus(204);
+  if (ALLOW_ORIGIN) {
+    res.setHeader("Access-Control-Allow-Origin", ALLOW_ORIGIN);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-api-key");
+  // 特定Origin固定の明示（キャッシュ分岐用）
+  res.setHeader("Vary", "Origin");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
   next();
 });
 
-// APIキーチェック
+// ====== ヘルパ：APIキー検証（/seats用） ======
 function requireApiKey(req, res, next) {
-  const key = req.header("x-api-key");
-  if (!key || key !== API_SECRET) return res.status(401).json({ error: "Unauthorized" });
+  const key = req.header("x-api-key") || "";
+  if (!API_SECRET || key !== API_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   next();
 }
 
-// Health
-app.get("/", (_, res) => res.type("text").send("ok"));
-app.get("/ping", (_, res) => res.json({ pong: true, time: new Date().toISOString() }));
+// ====== 健康確認 ======
+app.get("/ping", (req, res) => {
+  res.json({ pong: true, time: new Date().toISOString() });
+});
 
-// 残席API（まずはダミー返却）
+// ====== ダミー座席API（キー必須） ======
 app.get("/seats", requireApiKey, (req, res) => {
+  // クエリ例: ?from=kanazawa&to=shirakawago&todate=YYYY-MM-DD
   const { from = "kanazawa", to = "shirakawago", todate } = req.query;
-  if (!todate) return res.status(400).json({ error: "missing 'todate' (YYYY-MM-DD)" });
+
+  // ダミーの判定（todateの末尾でパターン変化）※お好みで固定にしてOK
+  const statuses = ["available", "limited", "full"];
+  let pick = 0;
+  if (typeof todate === "string" && todate.length >= 10) {
+    const d = Number(todate.replaceAll("-", "").slice(-2));
+    pick = d % statuses.length;
+  }
+  const status = statuses[pick];
+
+  const remaining = status === "limited" ? Math.max(1, (new Date().getMinutes() % 8) + 2) : null;
+
   res.json({
-    route: `${from}->${to}`,
-    date: String(todate),
-    window: "morning-14:00",
-    summary: { status: "available", remaining: null }, // available/limited/full
-    last_updated: new Date().toISOString(),
+    query: { from, to, todate },
+    summary: {
+      status,                 // "available" | "limited" | "full"
+      remaining,              // limited のときだけ数が入る（null可）
+      updatedAt: new Date().toISOString(),
+    },
+    // 必要なら便ごとのダミー配列を追加
+    items: []
   });
 });
 
-// 404
-app.use((_, res) => res.status(404).json({ error: "not_found" }));
-
+// ====== 起動 ======
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`API :${PORT}`));
+app.listen(PORT, () => {
+  console.log(`API listening on :${PORT}`);
+});
