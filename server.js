@@ -3,8 +3,8 @@ import express from "express";
 const app = express();
 
 // ====== 環境変数 ======
-const API_SECRET   = process.env.API_SECRET || "";      // 例: "sk_live_abc123..."
-const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "";    // 例: "https://kkkkkk0405.github.io"（末尾スラなし）
+const API_SECRET   = process.env.API_SECRET || "https://kkkkkk0405.github.io";      // 例: "sk_live_abc123..."
+const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "sk_live_123456";    // 例: "https://kkkkkk0405.github.io"（末尾スラなし）
 
 // ====== CORS 固定（ALLOW_ORIGIN のみ許可） ======
 app.use((req, res, next) => {
