@@ -6,7 +6,7 @@ const app = express();
 <<<<<<< HEAD
 =======
 const API_SECRET   = process.env.API_SECRET || "sk_live_123456";      // 例: "sk_live_abc123..."
-const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "sk_live_123456";    // 例: "https://kkkkkk0405.github.io"（末尾スラなし）
+const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || "https://kkkkkk0405.github.io";    // 例: "https://kkkkkk0405.github.io"（末尾スラなし）
 >>>>>>> 81023cc230e7d8b7297d24404f132bc8b3e59041
 
 const API_SECRET   = process.env.API_SECRET || "sk_live_abc123456";      // 例: "sk_live_abc123456"
